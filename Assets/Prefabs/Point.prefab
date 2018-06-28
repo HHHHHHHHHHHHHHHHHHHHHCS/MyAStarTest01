@@ -20,7 +20,6 @@ GameObject:
   m_Component:
   - component: {fileID: 4514909012748208}
   - component: {fileID: 33352083186176848}
-  - component: {fileID: 65826827459508010}
   - component: {fileID: 23197915380409798}
   m_Layer: 0
   m_Name: Point
@@ -56,7 +55,7 @@ MeshRenderer:
   m_LightProbeUsage: 1
   m_ReflectionProbeUsage: 1
   m_Materials:
-  - {fileID: 2100000, guid: c52bc9b7ba32f4c4ab3da8cb3cf14726, type: 2}
+  - {fileID: 2100000, guid: 84424b511db3ac94da610338f6455e93, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -83,15 +82,3 @@ MeshFilter:
   m_PrefabInternal: {fileID: 100100000}
   m_GameObject: {fileID: 1876583832018406}
   m_Mesh: {fileID: 10202, guid: 0000000000000000e000000000000000, type: 0}
---- !u!65 &65826827459508010
-BoxCollider:
-  m_ObjectHideFlags: 1
-  m_PrefabParentObject: {fileID: 0}
-  m_PrefabInternal: {fileID: 100100000}
-  m_GameObject: {fileID: 1876583832018406}
-  m_Material: {fileID: 0}
-  m_IsTrigger: 0
-  m_Enabled: 1
-  serializedVersion: 2
-  m_Size: {x: 1, y: 1, z: 1}
-  m_Center: {x: 0, y: 0, z: 0}
