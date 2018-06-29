@@ -4,7 +4,13 @@ using System.Collections.Generic;
 using UnityEngine;
 using Random = UnityEngine.Random;
 
-
+/*
+ * UI的制作没有做
+ * F1改变起点 F2 改变终点  F3 改变困难点 F4 改变不能行走的路径  
+ * F5刷新   ESC 把困难和不能行走的路变成普通的路  F8 改变成 八个方向的走法
+ * 
+ * 
+ */
 public class MainGameManager : MonoBehaviour
 {
     public static MainGameManager Instance { get; private set; }
@@ -19,20 +25,22 @@ public class MainGameManager : MonoBehaviour
     [SerializeField]
     private float stepX = 1f, stepY = 1f;
 
-    private float startX, startY;
 
     private PointInfo[,] mapArray;
     public PointInfo[,] MapArray { get { return mapArray; } }
     private Camera mainCamera;
-
+    private float startX, startY;
     private PointInfo startPoint, endPoint;
+    private WaitForSeconds second;
+    private List<PointData> passList;
 
     private void Awake()
     {
         Instance = this;
         mainCamera = Camera.main;
+        second = new WaitForSeconds(0.25f);
         InitMap();
-        RandomSpawnPoint();
+        SpawnMapRandomPoint();
     }
 
     private void Update()
@@ -41,12 +49,15 @@ public class MainGameManager : MonoBehaviour
         {
             GetPointByInput(Input.mousePosition);
         }
-        else if(Input.GetKeyDown(KeyCode.Space))
+        else if (Input.GetKeyDown(KeyCode.Space))
         {
             StartAStar();
         }
     }
 
+    /// <summary>
+    /// 初始化地图
+    /// </summary>
     private void InitMap()
     {
         mapArray = new PointInfo[width, height];
@@ -65,12 +76,15 @@ public class MainGameManager : MonoBehaviour
         }
     }
 
-    private void RandomSpawnPoint()
+    /// <summary>
+    /// 生成地图上随机的点
+    /// </summary>
+    private void SpawnMapRandomPoint()
     {
         //产生起点
-        RandomDoThing(item => { startPoint = item; item.PointType = PointEnum.Start; } );
+        RandomDoThing(item => { startPoint = item; item.PointType = PointEnum.Start; });
         //产生终点
-        RandomDoThing(item => {  endPoint = item ; item.PointType = PointEnum.End; });
+        RandomDoThing(item => { endPoint = item; item.PointType = PointEnum.End; });
         //产生难走的路
         for (int i = 0; i < 300; i++)
         {
@@ -85,6 +99,10 @@ public class MainGameManager : MonoBehaviour
 
     }
 
+    /// <summary>
+    /// 在地图上随机一个正常的点  做事情
+    /// </summary>
+    /// <param name="act"></param>
     private void RandomDoThing(Action<PointInfo> act)
     {
         for (int i = 0; i < width * height; i++)
@@ -120,6 +138,10 @@ public class MainGameManager : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// 根据输入的位置得到点
+    /// </summary>
+    /// <param name="inputPos">输入的位置</param>
     private void GetPointByInput(Vector2 inputPos)
     {
         Ray ray = mainCamera.ScreenPointToRay(inputPos);
@@ -130,21 +152,41 @@ public class MainGameManager : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// 根据点击的点 得到位置
+    /// 位置 从0开始  到 最大-1
+    /// </summary>
+    /// <param name="hitPoint">点击的点</param>
+    /// <returns></returns>
     public Vector2Int GetPosByHitPoint(Vector3 hitPoint)
-    {//从0开始  到最大-1
+    {
         int x = (int)(hitPoint.x - startX + stepX / 2);
         int y = (int)(hitPoint.z - startY + stepY / 2);
-        Debug.LogFormat("HitPoint:({0},{1})",x,y);
+        Debug.LogFormat("HitPoint:({0},{1})", x, y);
         return new Vector2Int(x, y);
     }
 
+    /// <summary>
+    /// 开始寻路
+    /// </summary>
     public void StartAStar()
     {
-        List<PointData> list;
-        PointFinding.FindPath(startPoint.pointPos, endPoint.pointPos, out list);
-        foreach(var item in list)
+        PointFinding.FindPath(startPoint.pointPos, endPoint.pointPos, out passList);
+        StartCoroutine(StartPassList());
+    }
+
+    /// <summary>
+    /// 慢慢展示列表
+    /// </summary>
+    /// <returns></returns>
+    public IEnumerator StartPassList()
+    {
+        while (passList != null && passList.Count > 0)
         {
+            var item = passList[0];
             mapArray[item.pointPos.x, item.pointPos.y].SetPass();
+            passList.Remove(item);
+            yield return second;
         }
     }
 }

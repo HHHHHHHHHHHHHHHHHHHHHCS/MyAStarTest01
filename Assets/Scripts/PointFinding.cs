@@ -48,13 +48,13 @@ public class PointFinding
     /// <summary>
     /// 计算G
     /// </summary>
-    /// <param name="data"></param>
-    /// <returns></returns>
-    public static double CalG(PointData data)
+    /// <param name="data">传入的点信息</param>
+    /// <returns>G值的计算</returns>
+    public static double CalG(PointData data,PointPos newPos)
     {
         double result= data.g + StraightLine;
         double temp = 0;
-        var _type = MainMap[data.pointPos.x, data.pointPos.y].PointType;
+        var _type = MainMap[newPos.x, newPos.y].PointType;
         switch (_type)
         {
             case PointEnum.Normal:
@@ -71,8 +71,8 @@ public class PointFinding
     /// 计算H的抽象方法
     /// 里面包含了权重的计算
     /// </summary>
-    /// <param name="pnt"></param>
-    /// <returns></returns>
+    /// <param name="pnt">传入的点信息</param>
+    /// <returns>H值的计算的抽象方法</returns>
     public static double CalH(PointPos pnt)
     {
         return HPowEuclidianDistance(pnt);
@@ -81,34 +81,40 @@ public class PointFinding
     /// <summary>
     /// 获取曼哈顿距离
     /// </summary>
-    /// <param name="pnt"></param>
-    /// <returns></returns>
+    /// <param name="pnt">传入的点信息</param>
+    /// <returns>H值的曼哈顿距离</returns>
     private static double HManhattanDistance(PointPos pnt)
     {
         return Math.Abs(pnt.x - End_Pnt.x) + Math.Abs(pnt.y - End_Pnt.y);
     }
 
     /// <summary>
-    /// 获取曼哈顿距离
+    /// 获取欧几里得距离
     /// </summary>
-    /// <param name="pnt"></param>
-    /// <returns></returns>
+    /// <param name="pnt">传入的点信息</param>
+    /// <returns>H值的欧几里得距离</returns>
     private static double HEuclidianDistance(PointPos pnt)
     {
         return Math.Sqrt(HPowEuclidianDistance(pnt));
     }
 
     /// <summary>
-    /// 获取曼哈顿距离
+    /// 获取欧几里得距离
     /// </summary>
     /// <param name="pnt"></param>
-    /// <returns></returns>
+    /// <returns>H值的Pow欧几里得离</returns>
     private static double HPowEuclidianDistance(PointPos pnt)
     {
         return Math.Pow(pnt.x - End_Pnt.x, 2) + Math.Pow(pnt.y - End_Pnt.y, 2);
     }
     #endregion
 
+    /// <summary>
+    /// 传入地图信息
+    /// </summary>
+    /// <param name="s">起点</param>
+    /// <param name="e">终点</param>
+    /// <returns>能否进行寻路</returns>
     private static bool GenerateMap(PointPos s, PointPos e)
     {
         if(MainMap==null)
@@ -174,11 +180,9 @@ public class PointFinding
                     //查找判断点是否在"开启列表"中
                     PointData tempData = openList.Find(x => x.pointPos.Equals(newPoint));
 
-                    double tempG = CalG(data);
+                    double tempG = CalG(data, newPoint);
                     if (tempData != null)
                     {
-                        //double goffest = Math.Abs(directs[i, 0]) != Math.Abs(directs[i, 1])
-                        //    ? StraightLine : SlantLine;
                         if (tempData.g > tempG)
                         {
                             tempData.g = tempG;
@@ -187,8 +191,6 @@ public class PointFinding
                     }
                     else
                     {
-                        //double goffest = Math.Abs(directs[i, 0]) != Math.Abs(directs[i, 1])
-                        //    ? StraightLine : SlantLine;
                         double h = CalH(newPoint);
                         PointData newData = new PointData(newPoint, tempG, h, data);
                         openList.Add(newData);
@@ -227,7 +229,6 @@ public class PointFinding
 
     public static bool FindPath(PointPos s, PointPos e, out List<PointData> pathList)
     {
-
         pathList = null;
         return GenerateMap(s, e) && Search(out pathList);
     }
