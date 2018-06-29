@@ -144,7 +144,6 @@ public class MainGameManager : MonoBehaviour
         PointFinding.FindPath(startPoint.pointPos, endPoint.pointPos, out list);
         foreach(var item in list)
         {
-            Debug.Log(mapArray[item.pointPos.x, item.pointPos.y].PointType == PointEnum.End);
             mapArray[item.pointPos.x, item.pointPos.y].SetPass();
         }
     }

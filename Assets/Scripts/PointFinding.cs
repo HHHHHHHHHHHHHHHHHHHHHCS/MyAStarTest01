@@ -13,7 +13,7 @@ public class PointFinding
     /// <summary>
     /// 斜线距离
     /// </summary>
-    //private const double SlantLine = 1.4;
+    private const double SlantLine = 1.4;
     /// <summary>
     /// 四个方向的数组
     /// </summary>
@@ -44,7 +44,29 @@ public class PointFinding
     public static PointPos End_Pnt;
     #endregion
 
-    #region H相关
+    #region G和H相关
+    /// <summary>
+    /// 计算G
+    /// </summary>
+    /// <param name="data"></param>
+    /// <returns></returns>
+    public static double CalG(PointData data)
+    {
+        double result= data.g + StraightLine;
+        double temp = 0;
+        var _type = MainMap[data.pointPos.x, data.pointPos.y].PointType;
+        switch (_type)
+        {
+            case PointEnum.Normal:
+                temp = 1;
+                break;
+            case PointEnum.Hard:
+                temp = 10;
+                break;
+        }
+        return result+temp;
+    }
+
     /// <summary>
     /// 计算H的抽象方法
     /// 里面包含了权重的计算
@@ -53,7 +75,7 @@ public class PointFinding
     /// <returns></returns>
     public static double CalH(PointPos pnt)
     {
-        return HPowEuclidianDistance(pnt) * (MainMap[pnt.x, pnt.y].PointType == PointEnum.Normal ? 1 : 100);
+        return HPowEuclidianDistance(pnt);
     }
 
     /// <summary>
@@ -89,15 +111,19 @@ public class PointFinding
 
     private static bool GenerateMap(PointPos s, PointPos e)
     {
+        if(MainMap==null)
+        {
+            var main = MainGameManager.Instance;
+            MainMap = main.MapArray;
+            Max_PNT = new PointPos(main.Width, main.Height);
+        }
+
         if (s.Equals(e))
         {
             Debug.Log("起点和终点相同");
             return false;
         }
 
-        var main = MainGameManager.Instance;
-        MainMap = main.MapArray;
-        Max_PNT = new PointPos(main.Width, main.Height);
         Start_Pnt = s;
         End_Pnt = e;
 
@@ -147,11 +173,12 @@ public class PointFinding
                     }
                     //查找判断点是否在"开启列表"中
                     PointData tempData = openList.Find(x => x.pointPos.Equals(newPoint));
+
+                    double tempG = CalG(data);
                     if (tempData != null)
                     {
                         //double goffest = Math.Abs(directs[i, 0]) != Math.Abs(directs[i, 1])
                         //    ? StraightLine : SlantLine;
-                        double tempG = data.g + StraightLine;
                         if (tempData.g > tempG)
                         {
                             tempData.g = tempG;
@@ -162,9 +189,8 @@ public class PointFinding
                     {
                         //double goffest = Math.Abs(directs[i, 0]) != Math.Abs(directs[i, 1])
                         //    ? StraightLine : SlantLine;
-                        double goffest = data.g + StraightLine;
                         double h = CalH(newPoint);
-                        PointData newData = new PointData(newPoint, goffest, h, data);
+                        PointData newData = new PointData(newPoint, tempG, h, data);
                         openList.Add(newData);
 
                         if (MainMap[newPoint.x, newPoint.y].PointType == PointEnum.End)
@@ -174,9 +200,6 @@ public class PointFinding
                             break;
                         }
                     }
-
-
-
                 }
             }
         }
