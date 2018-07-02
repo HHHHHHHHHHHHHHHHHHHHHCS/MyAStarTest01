@@ -17,8 +17,11 @@ public class PointFinding
     /// <summary>
     /// 四个方向的数组
     /// </summary>
-    private static readonly int[,] directs = { { 1, 0 }, { 0, 1 }, { -1, 0 }, { 0, -1 } };
-
+    private static readonly int[,] fourDirects = { { 1, 0 }, { 0, 1 }, { -1, 0 }, { 0, -1 } };
+    /// <summary>
+    /// 八个方向的数组
+    /// </summary>
+    private static readonly int[,] eightDirects = { { 1, 0 }, { 0, 1 }, { -1, 0 }, { 0, -1 }, { 1, 1 }, { -1, 1 }, { -1, 1 }, { 1, -1 } };
     #endregion
 
     #region 传入属性
@@ -42,6 +45,11 @@ public class PointFinding
     /// 终点
     /// </summary>
     public static PointPos End_Pnt;
+
+    /// <summary>
+    /// 是八方向的计算
+    /// </summary>
+    public static bool IsEight;
     #endregion
 
     #region G和H相关
@@ -50,9 +58,9 @@ public class PointFinding
     /// </summary>
     /// <param name="data">传入的点信息</param>
     /// <returns>G值的计算</returns>
-    public static double CalG(PointData data,PointPos newPos)
+    public static double CalG(PointData data, PointPos newPos, bool isStraightLine)
     {
-        double result= data.g + StraightLine;
+        double result = data.g + (isStraightLine ? StraightLine : SlantLine);
         double temp = 0;
         var _type = MainMap[newPos.x, newPos.y].PointType;
         switch (_type)
@@ -64,7 +72,7 @@ public class PointFinding
                 temp = 10;
                 break;
         }
-        return result+temp;
+        return result + temp;
     }
 
     /// <summary>
@@ -75,7 +83,7 @@ public class PointFinding
     /// <returns>H值的计算的抽象方法</returns>
     public static double CalH(PointPos pnt)
     {
-        return HPowEuclidianDistance(pnt);
+        return HManhattanDistance(pnt);
     }
 
     /// <summary>
@@ -117,7 +125,7 @@ public class PointFinding
     /// <returns>能否进行寻路</returns>
     private static bool GenerateMap(PointPos s, PointPos e)
     {
-        if(MainMap==null)
+        if (MainMap == null)
         {
             var main = MainGameManager.Instance;
             MainMap = main.MapArray;
@@ -168,9 +176,12 @@ public class PointFinding
                 continue;
             }
 
-            for (int i = 0; i < directs.GetLength(0); i++)
+            int[,] nowDir = IsEight ? eightDirects : fourDirects;
+
+            for (int i = 0; i < nowDir.GetLength(0); i++)
             {
-                PointPos newPoint = new PointPos(point.x + directs[i, 0], point.y + directs[i, 1]);
+                bool isStraight = IsEight ? Mathf.Abs(nowDir[i, 0]) != Mathf.Abs(nowDir[i, 1]) : true;
+                PointPos newPoint = new PointPos(point.x + nowDir[i, 0], point.y + nowDir[i, 1]);
                 if (newPoint.x >= 0 && newPoint.x < Max_PNT.x && newPoint.y >= 0 && newPoint.y < Max_PNT.y)
                 {
                     if (MainMap[newPoint.x, newPoint.y].PointType == PointEnum.Cannot)
@@ -180,7 +191,7 @@ public class PointFinding
                     //查找判断点是否在"开启列表"中
                     PointData tempData = openList.Find(x => x.pointPos.Equals(newPoint));
 
-                    double tempG = CalG(data, newPoint);
+                    double tempG = CalG(data, newPoint, isStraight);
                     if (tempData != null)
                     {
                         if (tempData.g > tempG)

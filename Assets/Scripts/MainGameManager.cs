@@ -4,13 +4,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using Random = UnityEngine.Random;
 
-/*
- * UI的制作没有做
- * F1改变起点 F2 改变终点  F3 改变困难点 F4 改变不能行走的路径  
- * F5刷新   ESC 把困难和不能行走的路变成普通的路  F8 改变成 八个方向的走法
- * 
- * 
- */
+
 public class MainGameManager : MonoBehaviour
 {
     public static MainGameManager Instance { get; private set; }
@@ -33,25 +27,74 @@ public class MainGameManager : MonoBehaviour
     private PointInfo startPoint, endPoint;
     private WaitForSeconds second;
     private List<PointData> passList;
+    private PointEnum nowState;
 
     private void Awake()
     {
         Instance = this;
         mainCamera = Camera.main;
-        second = new WaitForSeconds(0.25f);
+        second = new WaitForSeconds(0.1f);
         InitMap();
         SpawnMapRandomPoint();
     }
 
     private void Update()
     {
-        if (Input.GetMouseButtonDown(0))
+        UpdateCheck();
+    }
+
+    public void UpdateCheck()
+    {
+
+        if (Input.GetKeyDown(KeyCode.Space))
+        {
+            StartAStar();
+        }
+        else if (Input.GetMouseButtonDown(0))
         {
             GetPointByInput(Input.mousePosition);
         }
-        else if (Input.GetKeyDown(KeyCode.Space))
+        else if (Input.GetKeyDown(KeyCode.BackQuote))
         {
-            StartAStar();
+            nowState = PointEnum.Normal;
+        }
+        else if (Input.GetKeyDown(KeyCode.F1))
+        {
+            nowState = PointEnum.Start;
+        }
+        else if (Input.GetKeyDown(KeyCode.F2))
+        {
+            nowState = PointEnum.End;
+        }
+        else if (Input.GetKeyDown(KeyCode.F3))
+        {
+            nowState = PointEnum.Hard;
+        }
+        else if (Input.GetKeyDown(KeyCode.F4))
+        {
+            nowState = PointEnum.Cannot;
+        }
+        else if (Input.GetKeyDown(KeyCode.Escape))
+        {
+            nowState = PointEnum.None;
+        }
+        else if (Input.GetKeyDown(KeyCode.F5))
+        {
+            SpawnMapRandomPoint(true);
+        }
+        else if (Input.GetKeyDown(KeyCode.F8))
+        {
+            PointFinding.IsEight = !PointFinding.IsEight;
+        }
+        else if (Input.GetKeyDown(KeyCode.Tab))
+        {
+            foreach (var item in mapArray)
+            {
+                if(item.IsPass)
+                {
+                    item.SwitchPassColor();
+                }
+            }
         }
     }
 
@@ -76,11 +119,21 @@ public class MainGameManager : MonoBehaviour
         }
     }
 
-    /// <summary>
-    /// 生成地图上随机的点
-    /// </summary>
-    private void SpawnMapRandomPoint()
+/// <summary>
+/// 生成地图上的点
+/// </summary>
+/// <param name="isReset">是否刷新地图</param>
+    private void SpawnMapRandomPoint(bool isReset=false)
     {
+        if (isReset)
+        {//重新生成
+            passList = null;
+            foreach (var item in mapArray)
+            {
+                item.Reset();
+            }
+        }
+
         //产生起点
         RandomDoThing(item => { startPoint = item; item.PointType = PointEnum.Start; });
         //产生终点
@@ -95,8 +148,6 @@ public class MainGameManager : MonoBehaviour
         {
             RandomDoThing(item => item.PointType = PointEnum.Cannot);
         }
-
-
     }
 
     /// <summary>
@@ -148,7 +199,8 @@ public class MainGameManager : MonoBehaviour
         RaycastHit hit;
         if (Physics.Raycast(ray, out hit))
         {
-            GetPosByHitPoint(hit.point);
+            var point = GetPosByHitPoint(hit.point);
+            ChangeRoad(point);
         }
     }
 
@@ -162,7 +214,6 @@ public class MainGameManager : MonoBehaviour
     {
         int x = (int)(hitPoint.x - startX + stepX / 2);
         int y = (int)(hitPoint.z - startY + stepY / 2);
-        Debug.LogFormat("HitPoint:({0},{1})", x, y);
         return new Vector2Int(x, y);
     }
 
@@ -171,7 +222,15 @@ public class MainGameManager : MonoBehaviour
     /// </summary>
     public void StartAStar()
     {
+        foreach(var item in mapArray)
+        {
+            item.SetPass(false);
+        }
+        long time1 = DateTime.Now.Ticks;
+
         PointFinding.FindPath(startPoint.pointPos, endPoint.pointPos, out passList);
+
+        Debug.Log(TimeSpan.FromTicks(DateTime.Now.Ticks-time1));
         StartCoroutine(StartPassList());
     }
 
@@ -181,12 +240,42 @@ public class MainGameManager : MonoBehaviour
     /// <returns></returns>
     public IEnumerator StartPassList()
     {
+        foreach(var item in passList)
+        {
+            mapArray[item.pointPos.x, item.pointPos.y].SetPass();
+        }
+
         while (passList != null && passList.Count > 0)
         {
             var item = passList[0];
-            mapArray[item.pointPos.x, item.pointPos.y].SetPass();
+            mapArray[item.pointPos.x, item.pointPos.y].SetPassColor();
             passList.Remove(item);
             yield return second;
         }
+    }
+
+    public void ChangeRoad(Vector2Int point)
+    {
+        if (nowState == PointEnum.None)
+        {
+            return;
+        }
+        var item = mapArray[point.x, point.y];
+        if (item.PointType == PointEnum.Start || item.PointType == PointEnum.End)
+        {
+            return;
+        }
+        if (nowState == PointEnum.Start)
+        {
+            startPoint.PointType = PointEnum.Normal;
+            startPoint = item;
+        }
+        else if (nowState == PointEnum.End)
+        {
+            endPoint.PointType = PointEnum.Normal;
+            endPoint = item;
+        }
+
+        item.PointType = nowState;
     }
 }

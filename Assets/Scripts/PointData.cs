@@ -5,6 +5,7 @@ using UnityEngine;
 
 public enum PointEnum
 {
+    None,//无效的空值
     Start,//蓝色-起点
     End,//黑色-终点
     Normal,//白色-普通的路
@@ -57,6 +58,8 @@ public class PointInfo
     public GameObject go;
     private PointEnum pointType;
     private MeshRenderer renderer;
+    public bool IsPass { get; private set; }
+    public bool IsPassColor { get; private set; }
 
     public PointEnum PointType
     {
@@ -82,28 +85,60 @@ public class PointInfo
         }
     }
 
-    public void SetPass()
+    public void SwitchPassColor()
+    {
+
+        if (IsPass)
+        {
+            if(IsPassColor)
+            {
+                IsPassColor = false;
+                ResetColor();
+            }
+            else
+            {
+                IsPassColor = true;
+                SetPassColor();
+            }
+        }
+    }
+
+    public void SetPass(bool bo = true)
+    {
+        IsPass = bo;
+        IsPassColor = bo;
+        if(!bo)
+        {
+            ResetColor();
+        }
+    }
+
+    public void SetPassColor()
     {
         ChangeColor(Color.cyan);
     }
 
-    public void ResetPass()
+    public void ResetColor()
     {
         ChangeColor();
     }
 
-    public void ChangeColor(Color? _color =null)
+    public void ChangeColor(Color? _color = null)
     {
         if (renderer != null)
         {
             MaterialPropertyBlock prop = new MaterialPropertyBlock();
             Color col;
-            if(_color!=null)
+            if (_color != null)
             {
                 col = _color.Value;
             }
             else
             {
+                if (PointType == PointEnum.None)
+                {
+                    return;
+                }
                 switch (PointType)
                 {
                     case PointEnum.Start:
@@ -122,14 +157,19 @@ public class PointInfo
                         col = Color.red;
                         break;
                     default:
-                        col= new Color(1, 0, 1, 1);
+                        col = new Color(1, 0, 1, 1);
                         break;
-                        
                 }
             }
 
             prop.SetColor("_Color", col);
             renderer.SetPropertyBlock(prop);
         }
+    }
+
+    public void Reset()
+    {
+        PointType = PointEnum.Normal;
+        IsPass = false;
     }
 }
